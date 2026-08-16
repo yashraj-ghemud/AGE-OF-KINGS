@@ -1,5 +1,32 @@
-# AGE-OF-KINGS
-> A TypeScript React + React Three Fiber browser game scaffold (Vite) with a client-side 3D scene, gameplay systems, UI, and Cloudflare Workers deployment hooks.
+<p align="center">
+  <img src="./.github/readme-assets/playground.gif" alt="Animated playground / experience visual for AGE-OF-KINGS" width="100%" />
+</p>
+
+<h1 align="center">AGE-OF-KINGS</h1>
+
+<p align="center"><strong>A TypeScript React + React Three Fiber browser game scaffold (Vite) with a client-side 3D scene, gameplay systems, UI, and Cloudflare Workers deployment hooks.</strong></p>
+
+<p align="center"><code>REPO//SIGNAL</code> · <code>PLAYGROUND / EXPERIENCE</code> · <code>LOOPING README EXPERIENCE</code></p>
+
+## Live signal
+
+| Lens | Readout |
+| --- | --- |
+| Portfolio lane | **PLAYGROUND / EXPERIENCE** |
+| Code surface | **28** tracked files observed |
+| Primary materials | **React TSX, JSON, TypeScript, Markdown** |
+| Verification | **0** test-related files observed |
+
+> A kinetic frame for interaction, play, and visual craft. The animated frame above is a lightweight visual signature; the sections below remain the source of truth for implementation details.
+
+## Motion map
+
+`DISCOVER` → `INTERACT` → `ITERATE`
+
+Start with the experience surface, follow the main interaction loop, then iterate on feedback, accessibility, and performance. The README is designed as a quick visual entry point before the deeper project dossier.
+
+<details open>
+<summary><strong>Open the full project dossier</strong></summary>
 
 ## Overview
 Age of Kings is a single-page client application built with React and three.js (via React Three Fiber). The repository contains a browser game scaffolded with Vite that composes a 3D scene, gameplay components, sound initialization, and a campaign UI. The project includes build and deploy scripts that integrate with Cloudflare Wrangler.
@@ -122,3 +149,9 @@ If you need to inspect the code paths referenced above, start by opening:
 
 License
 - No license file was present in the supplied dossier; none is declared here.
+
+</details>
+
+---
+
+<p align="center"><sub>README motion system · visual layer by RepoSignal · implementation details remain project-specific</sub></p>
