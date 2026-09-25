@@ -1,398 +1,236 @@
 import { create } from 'zustand';
-import * as THREE from 'three';
-import { v4 as uuidv4 } from 'uuid';
+import { CHAPTERS, dawnForProgress } from '../story/campaign';
 
+export type Screen =
+  | 'gate'
+  | 'intro'
+  | 'menu'
+  | 'chronicle'
+  | 'settings'
+  | 'map'
+  | 'briefing'
+  | 'playing'
+  | 'results'
+  | 'ending';
+
+export type Quality = 'cinematic' | 'balanced' | 'performance';
 export type WeaponType = 'sword' | 'spear' | 'bow';
-export type UnitType = 'king' | 'swordsman' | 'spearman' | 'archer' | 'eagle' | 'rakshas' | 'dragon';
+export type ArmyOrder = 'hold' | 'attack' | 'guard';
+export type CaptureState = 'free' | 'trapping' | 'trapped' | 'carried' | 'jailed';
 
-export interface UnitData {
-  id: string;
-  isEnemy: boolean;
-  type: UnitType;
-  weapon: WeaponType;
+export interface Settings {
+  quality: Quality;
+  masterVolume: number;
+  musicVolume: number;
+  sensitivity: number;
+  invertY: boolean;
+  shake: boolean;
+}
+
+export interface Progress {
+  completed: string[];
+  available: string[];
+  lastPlayed: string | null;
+}
+
+export interface HudState {
   health: number;
   maxHealth: number;
-  position: THREE.Vector3;
-  velocity: THREE.Vector3;
-  rotation: number;
-  targetId: string | null;
-  lastAttack: number;
-  dead: boolean;
-  deathTime?: number;
-  isPlayer?: boolean;
-  buffTime?: number;
-  role?: 'carrier' | 'minister' | 'backup';
-  formationOffset?: THREE.Vector3;
-  campId?: string;
-  lastFootstep?: number;
-  isCalled?: boolean;
+  stamina: number;
+  ember: number;
+  army: number;
+  enemies: number;
+  lordsLeft: number;
+  lordsTotal: number;
+  order: ArmyOrder;
+  weapon: WeaponType;
+  cd: { cry: number; charge: number; slam: number; horn: number };
+  capture: CaptureState;
+  jailTime: number;
+  boss: { name: string; hp: number; max: number } | null;
+  riding: boolean;
+  nearDragon: boolean;
+  bowDraw: number;
+  combo: number;
+  dawn: number;
+  firstPerson: boolean;
+  aiming: boolean;
+  rally: boolean;
+  summoning: boolean;
 }
 
-export interface ProjectileData {
-  id: string;
-  position: THREE.Vector3;
-  velocity: THREE.Vector3;
-  isEnemy: boolean;
-  damage: number;
-  life: number;
-  type?: 'arrow' | 'spear' | 'fire';
+export interface Banner {
+  id: number;
+  title: string;
+  subtitle?: string;
+  tone: 'gold' | 'crimson' | 'ember' | 'blue';
 }
 
-export interface EffectData {
-  id: string;
-  type: 'aoe' | 'rally';
-  position: THREE.Vector3;
-  life: number;
-  maxLife: number;
+export interface Dialogue {
+  id: number;
+  speaker: string;
+  text: string;
 }
 
-// Mutable game state for high-frequency updates (avoid React re-renders)
-export const mutableGameState = {
-  units: new Map<string, UnitData>(),
-  projectiles: new Map<string, ProjectileData>(),
-  effects: [] as EffectData[],
-  camps: [] as { position: THREE.Vector3, id: string }[],
-  playerCamp: { position: new THREE.Vector3(0, 0, 0), id: 'player_camp' },
-  cooldowns: { rally: 0, charge: 0, aoe: 0 },
-  playerState: { 
-    isCharging: false, 
-    chargeTime: 0,
-    isCaptured: false,
-    captureState: 'free' as 'free' | 'trapping' | 'trapped' | 'carried' | 'jailed',
-    jailCampId: null as string | null,
-    playerLocalOffset: new THREE.Vector3(),
-    invulnerableUntil: 0,
-    formation: 'free' as 'free' | 'protect',
-    ridingDragonId: null as string | null
-  },
-  spawningDragons: [] as { id: string, spawnStartTime: number, spawnPosition: THREE.Vector3 }[],
-  cagePosition: new THREE.Vector3(),
-  cageCarriers: [] as string[],
-  attackMode: false,
-  playerPos: new THREE.Vector3(),
-  isGameOver: false,
-  isRescueSpawned: false,
-  rallyPoint: null as THREE.Vector3 | null,
+export interface ResultStats {
+  kills: number;
+  lords: number;
+  sworn: number;
+  time: number;
+  ember: number;
+  dragons: number;
+}
+
+export interface Results {
+  victory: boolean;
+  reason: string;
+  stats: ResultStats;
+  chapterId: string;
+}
+
+const SETTINGS_KEY = 'aok.settings.v2';
+const PROGRESS_KEY = 'aok.progress.v2';
+const SEEN_KEY = 'aok.seenIntro.v2';
+
+function load<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return { ...fallback, ...JSON.parse(raw) };
+  } catch {
+    return fallback;
+  }
+}
+function save(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* storage unavailable (private mode) — progress lives for this session only */
+  }
+}
+
+const isTouch = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+
+const DEFAULT_SETTINGS: Settings = {
+  quality: isTouch ? 'performance' : 'balanced',
+  masterVolume: 0.85,
+  musicVolume: 0.7,
+  sensitivity: 1,
+  invertY: false,
+  shake: true,
 };
 
-export interface CampaignNode {
-  id: string;
-  title: string;
-  description: string;
-  type: 'invasion' | 'defense' | 'diplomacy';
-  choices: { text: string; nextNodeId: string }[];
-  levelConfig: {
-    numCamps: number;
-    playerStartUnits: number;
-    enemyDifficulty: number;
-  };
-}
+const FRESH_PROGRESS: Progress = { completed: [], available: ['start'], lastPlayed: null };
 
-export const CAMPAIGN_NODES: Record<string, CampaignNode> = {
-  start: {
-    id: 'start',
-    title: 'The Kingdom Divided',
-    description: 'Your kingdom has fractured. Rebellious lords have established their own camps. You must decide how to proceed.',
-    type: 'defense',
-    choices: [
-      { text: 'Launch a direct invasion into the heartland', nextNodeId: 'invasion_1' },
-      { text: 'Send diplomats to negotiate with the eastern lords', nextNodeId: 'diplomacy_1' },
-      { text: 'Fortify your position and wait for them to attack', nextNodeId: 'defense_1' }
-    ],
-    levelConfig: { numCamps: 6, playerStartUnits: 30, enemyDifficulty: 1 }
-  },
-  invasion_1: {
-    id: 'invasion_1',
-    title: 'The Heartland Offensive',
-    description: 'You march your army into the central plains. The enemy is caught off guard but they are numerous.',
-    type: 'invasion',
-    choices: [
-      { text: 'Push forward to the capital', nextNodeId: 'final_battle' },
-      { text: 'Secure the supply lines first', nextNodeId: 'defense_2' }
-    ],
-    levelConfig: { numCamps: 10, playerStartUnits: 40, enemyDifficulty: 1.5 }
-  },
-  diplomacy_1: {
-    id: 'diplomacy_1',
-    title: 'The Eastern Alliance',
-    description: 'The eastern lords agree to join your cause, providing you with a larger army to face the remaining rebels.',
-    type: 'diplomacy',
-    choices: [
-      { text: 'March on the capital together', nextNodeId: 'final_battle' }
-    ],
-    levelConfig: { numCamps: 8, playerStartUnits: 60, enemyDifficulty: 1.2 }
-  },
-  defense_1: {
-    id: 'defense_1',
-    title: 'The Siege of the High Keep',
-    description: 'The rebels attack your fortified position. You must hold the line.',
-    type: 'defense',
-    choices: [
-      { text: 'Counter-attack while they are weak', nextNodeId: 'invasion_1' }
-    ],
-    levelConfig: { numCamps: 8, playerStartUnits: 50, enemyDifficulty: 1.5 }
-  },
-  defense_2: {
-    id: 'defense_2',
-    title: 'Securing the Supply Lines',
-    description: 'You defend your supply caravans from rebel ambushes.',
-    type: 'defense',
-    choices: [
-      { text: 'March on the capital', nextNodeId: 'final_battle' }
-    ],
-    levelConfig: { numCamps: 7, playerStartUnits: 40, enemyDifficulty: 1.2 }
-  },
-  final_battle: {
-    id: 'final_battle',
-    title: 'The Battle for the Capital',
-    description: 'The final confrontation. Defeat the remaining rebel lords to reunite the kingdom.',
-    type: 'invasion',
-    choices: [],
-    levelConfig: { numCamps: 15, playerStartUnits: 50, enemyDifficulty: 2 }
-  }
+export const EMPTY_HUD: HudState = {
+  health: 1, maxHealth: 1, stamina: 1, ember: 0, army: 0, enemies: 0, lordsLeft: 0, lordsTotal: 0,
+  order: 'hold', weapon: 'sword', cd: { cry: 0, charge: 0, slam: 0, horn: 0 },
+  capture: 'free', jailTime: 0, boss: null, riding: false, nearDragon: false, bowDraw: 0, combo: 0,
+  dawn: 0, firstPerson: false, aiming: false, rally: false, summoning: false,
 };
 
 interface GameState {
-  screen: 'menu' | 'campaign' | 'playing' | 'won' | 'lost';
-  campaignNodeId: string;
-  level: number;
-  playerHealth: number;
-  playerMaxHealth: number;
-  currentWeapon: WeaponType;
-  enemiesCount: number;
-  friendliesCount: number;
+  screen: Screen;
+  prevScreen: Screen;
+  settings: Settings;
+  progress: Progress;
+  seenIntro: boolean;
+  chapterId: string;
+  /** increments every time a battle starts, so retries build a fresh world */
+  runId: number;
   paused: boolean;
-  setPaused: (paused: boolean) => void;
-  setScreen: (screen: 'menu' | 'campaign' | 'playing' | 'won' | 'lost') => void;
-  setCampaignNodeId: (id: string) => void;
-  setLevel: (level: number) => void;
-  setPlayerHealth: (health: number) => void;
-  setWeapon: (weapon: WeaponType) => void;
-  updateCounts: () => void;
-  initLevel: (nodeId: string) => void;
-  attackMode: boolean;
-  captureState: 'free' | 'trapping' | 'trapped' | 'carried' | 'jailed';
-  isRescueSpawned: boolean;
+  hud: HudState;
+  banners: Banner[];
+  dialogue: Dialogue | null;
+  results: Results | null;
+  showHelp: boolean;
+
+  setScreen: (s: Screen) => void;
+  back: () => void;
+  updateSettings: (patch: Partial<Settings>) => void;
+  markIntroSeen: () => void;
+  newCampaign: () => void;
+  selectChapter: (id: string) => void;
+  startChapter: () => void;
+  completeChapter: (id: string) => void;
+  setPaused: (p: boolean) => void;
+  setHud: (h: HudState) => void;
+  pushBanner: (b: Omit<Banner, 'id'>) => void;
+  dropBanner: (id: number) => void;
+  speak: (speaker: string, text: string) => void;
+  finish: (r: Results) => void;
+  toggleHelp: () => void;
+  dawn: () => number;
 }
 
+let bannerId = 1;
+
 export const useGameStore = create<GameState>((set, get) => ({
-  screen: 'menu',
-  campaignNodeId: 'start',
-  level: 1,
-  playerHealth: 50000,
-  playerMaxHealth: 50000,
-  currentWeapon: 'sword',
-  enemiesCount: 0,
-  friendliesCount: 0,
-  attackMode: false,
-  captureState: 'free',
-  isRescueSpawned: false,
+  screen: 'gate',
+  prevScreen: 'gate',
+  settings: load(SETTINGS_KEY, DEFAULT_SETTINGS),
+  progress: load(PROGRESS_KEY, FRESH_PROGRESS),
+  seenIntro: (() => {
+    try {
+      return localStorage.getItem(SEEN_KEY) === '1';
+    } catch {
+      return false;
+    }
+  })(),
+  chapterId: 'start',
+  runId: 0,
   paused: false,
-  setPaused: (paused) => set({ paused }),
-  formation: 'free' as 'free' | 'protect',
-  setScreen: (screen) => set({ screen }),
-  setCampaignNodeId: (id) => set({ campaignNodeId: id }),
-  setLevel: (level) => set({ level }),
-  setPlayerHealth: (health) => set({ playerHealth: health }),
-  setWeapon: (weapon) => set({ currentWeapon: weapon }),
-  updateCounts: () => {
-    let enemies = 0;
-    let friendlies = 0;
-    mutableGameState.units.forEach((u) => {
-      if (!u.dead) {
-        if (u.isEnemy) enemies++;
-        else if (!u.isPlayer) friendlies++;
-      }
-    });
-    set({ 
-      enemiesCount: enemies, 
-      friendliesCount: friendlies,
-      attackMode: mutableGameState.attackMode,
-      captureState: mutableGameState.playerState.captureState,
-      isRescueSpawned: mutableGameState.isRescueSpawned
-    });
-    
-    // Check win/loss
-    if (enemies === 0 && get().screen === 'playing') {
-      if (!mutableGameState.isGameOver) {
-        mutableGameState.isGameOver = true;
-        setTimeout(() => set({ screen: 'won' }), 3000);
-      }
-    }
+  hud: EMPTY_HUD,
+  banners: [],
+  dialogue: null,
+  results: null,
+  showHelp: true,
+
+  setScreen: (screen) => set({ prevScreen: get().screen, screen, paused: false }),
+  back: () => set({ screen: get().prevScreen === get().screen ? 'menu' : get().prevScreen }),
+  updateSettings: (patch) => {
+    const settings = { ...get().settings, ...patch };
+    save(SETTINGS_KEY, settings);
+    set({ settings });
   },
-  initLevel: (nodeId: string) => {
-    const node = CAMPAIGN_NODES[nodeId] || CAMPAIGN_NODES['start'];
-    set({ campaignNodeId: nodeId });
-
-    mutableGameState.units.clear();
-    mutableGameState.projectiles.clear();
-    mutableGameState.effects = [];
-    mutableGameState.camps = [];
-    mutableGameState.isGameOver = false;
-    mutableGameState.isRescueSpawned = false;
-    mutableGameState.rallyPoint = null;
-    
-    let numEnemies = 0;
-    let numFriendlies = 0;
-    
-    // Player
-    const playerId = 'player';
-    mutableGameState.units.set(playerId, {
-      id: playerId,
-      isEnemy: false,
-      type: 'king',
-      weapon: 'sword',
-      health: 50000,
-      maxHealth: 50000,
-      position: new THREE.Vector3(0, 0, 0),
-      velocity: new THREE.Vector3(),
-      rotation: 0,
-      targetId: null,
-      lastAttack: 0,
-      dead: false,
-      isPlayer: true,
-    });
-    
-    // Generate Open World Camps
-    const numCamps = node.levelConfig.numCamps;
-    for (let c = 0; c < numCamps; c++) {
-      let campPos;
-      let valid = false;
-      let attempts = 0;
-      while (!valid && attempts < 100) {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 150 + Math.random() * 600;
-        campPos = new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-        valid = true;
-        for (const existing of mutableGameState.camps) {
-          if (existing.position.distanceTo(campPos) < 120) {
-            valid = false;
-            break;
-          }
-        }
-        attempts++;
-      }
-      if (!campPos) continue;
-
-      const campId = uuidv4();
-      mutableGameState.camps.push({ position: campPos, id: campId });
-
-      // Enemy King for this camp
-      const kingId = uuidv4();
-      mutableGameState.units.set(kingId, {
-        id: kingId,
-        isEnemy: true,
-        type: 'king',
-        weapon: 'sword',
-        health: 55000 * node.levelConfig.enemyDifficulty,
-        maxHealth: 55000 * node.levelConfig.enemyDifficulty,
-        position: campPos.clone(),
-        velocity: new THREE.Vector3(),
-        rotation: Math.random() * Math.PI * 2,
-        targetId: null,
-        lastAttack: 0,
-        dead: false,
-        campId
-      });
-      numEnemies++;
-
-      // Enemy Soldiers for this camp
-      const numSoldiers = Math.floor((40 + Math.random() * 40) * node.levelConfig.enemyDifficulty); // Increased enemy count for larger kingdom
-      for (let i = 0; i < numSoldiers; i++) {
-        let type: UnitType = 'swordsman';
-        let weapon: WeaponType = 'sword';
-        const rand = Math.random();
-        if (rand < 0.15) { type = 'rakshas'; weapon = 'sword'; }
-        else if (rand < 0.40) { type = 'archer'; weapon = 'bow'; }
-        else if (rand < 0.70) { type = 'spearman'; weapon = 'spear'; }
-
-        let health = 500;
-        if (type === 'rakshas') health = 2500;
-        else if (type === 'swordsman') health = 800;
-        else if (type === 'spearman') health = 600;
-        else if (type === 'archer') health = 400;
-        health *= node.levelConfig.enemyDifficulty * 2.5; // 2.5x stronger base health
-
-        const id = uuidv4();
-        const offset = new THREE.Vector3((Math.random() - 0.5) * 70, 0, (Math.random() - 0.5) * 70);
-        mutableGameState.units.set(id, {
-          id,
-          isEnemy: true,
-          type,
-          weapon,
-          health,
-          maxHealth: health,
-          position: campPos.clone().add(offset),
-          velocity: new THREE.Vector3(),
-          rotation: Math.random() * Math.PI * 2,
-          targetId: null,
-          lastAttack: 0,
-          dead: false,
-          campId
-        });
-        numEnemies++;
-      }
+  markIntroSeen: () => {
+    try {
+      localStorage.setItem(SEEN_KEY, '1');
+    } catch {
+      /* ignore */
     }
-    
-    // Friendlies (Spawn around player)
-    numFriendlies = node.levelConfig.playerStartUnits;
-    for (let i = 0; i < numFriendlies; i++) {
-      let type: UnitType = 'swordsman';
-      let weapon: WeaponType = 'sword';
-      const rand = Math.random();
-      if (rand < 0.33) { type = 'archer'; weapon = 'bow'; }
-      else if (rand < 0.66) { type = 'spearman'; weapon = 'spear'; }
-      
-      let health = 500;
-      if (type === 'swordsman') health = 800;
-      else if (type === 'spearman') health = 600;
-      else if (type === 'archer') health = 400;
-
-      const id = uuidv4();
-      mutableGameState.units.set(id, {
-        id,
-        isEnemy: false,
-        type,
-        weapon,
-        health,
-        maxHealth: health,
-        position: new THREE.Vector3((Math.random() - 0.5) * 60, 0, (Math.random() - 0.5) * 60),
-        velocity: new THREE.Vector3(),
-        rotation: 0,
-        targetId: null,
-        lastAttack: 0,
-        dead: false,
-      });
-    }
-
-    // Add 2 Eagles
-    for (let i = 0; i < 2; i++) {
-      const id = uuidv4();
-      mutableGameState.units.set(id, {
-        id,
-        isEnemy: false,
-        type: 'eagle',
-        weapon: 'bow',
-        health: 1200,
-        maxHealth: 1200,
-        position: new THREE.Vector3((Math.random() - 0.5) * 60, 0, (Math.random() - 0.5) * 60),
-        velocity: new THREE.Vector3(),
-        rotation: 0,
-        targetId: null,
-        lastAttack: 0,
-        dead: false,
-      });
-      numFriendlies++;
-    }
-    
-    set({ 
-      screen: 'playing', 
-      playerHealth: 50000, 
-      playerMaxHealth: 50000,
-      currentWeapon: 'sword',
-      enemiesCount: numEnemies,
-      friendliesCount: numFriendlies,
-      paused: false
-    });
-  }
+    set({ seenIntro: true });
+  },
+  newCampaign: () => {
+    save(PROGRESS_KEY, FRESH_PROGRESS);
+    set({ progress: FRESH_PROGRESS, chapterId: 'start' });
+  },
+  selectChapter: (id) => set({ chapterId: CHAPTERS[id] ? id : 'start' }),
+  startChapter: () => {
+    const progress = { ...get().progress, lastPlayed: get().chapterId };
+    save(PROGRESS_KEY, progress);
+    set({ progress, screen: 'playing', prevScreen: 'briefing', paused: false, banners: [], dialogue: null, results: null, runId: get().runId + 1 });
+  },
+  completeChapter: (id) => {
+    const p = get().progress;
+    const completed = p.completed.includes(id) ? p.completed : [...p.completed, id];
+    const next = (CHAPTERS[id]?.choices ?? []).map((c) => c.nextNodeId).filter((n) => !completed.includes(n));
+    const progress: Progress = { completed, available: next, lastPlayed: id };
+    save(PROGRESS_KEY, progress);
+    set({ progress });
+  },
+  setPaused: (paused) => set({ paused }),
+  setHud: (hud) => set({ hud }),
+  pushBanner: (b) => {
+    const banner = { ...b, id: bannerId++ };
+    set({ banners: [...get().banners.slice(-2), banner] });
+  },
+  dropBanner: (id) => set({ banners: get().banners.filter((b) => b.id !== id) }),
+  speak: (speaker, text) => set({ dialogue: { id: bannerId++, speaker, text } }),
+  finish: (results) => {
+    if (results.victory) get().completeChapter(results.chapterId);
+    set({ results, screen: results.victory && results.chapterId === 'final_battle' ? 'ending' : 'results' });
+  },
+  toggleHelp: () => set({ showHelp: !get().showHelp }),
+  dawn: () => dawnForProgress(get().progress.completed.length),
 }));

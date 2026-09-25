@@ -1,157 +1,98 @@
 <p align="center">
-  <img src="./.github/readme-assets/playground.gif" alt="Animated playground / experience visual for AGE-OF-KINGS" width="100%" />
+  <img src="./.github/readme-assets/playground.gif" alt="Age of Kings" width="100%" />
 </p>
 
-<h1 align="center">AGE-OF-KINGS</h1>
+<h1 align="center">AGE OF KINGS — <i>The Endless Eclipse</i></h1>
 
-<p align="center"><strong>A TypeScript React + React Three Fiber browser game scaffold (Vite) with a client-side 3D scene, gameplay systems, UI, and Cloudflare Workers deployment hooks.</strong></p>
+<p align="center"><strong>A cinematic, story-driven, real-time 3D war saga for the browser.</strong><br/>
+<strong>Developed by Yashraj Ghemud</strong><br/>
+React 18 · React Three Fiber · three.js · Web Audio · no downloaded assets: every model, texture, cinematic and note of music is generated at runtime.</p>
 
-<p align="center"><code>REPO//SIGNAL</code> · <code>PLAYGROUND / EXPERIENCE</code> · <code>LOOPING README EXPERIENCE</code></p>
+> *Before there were kings, there was the Sun. Then your brother traded it for a crown of shadow.*
 
-## Live signal
-
-| Lens | Readout |
-| --- | --- |
-| Portfolio lane | **PLAYGROUND / EXPERIENCE** |
-| Code surface | **28** tracked files observed |
-| Primary materials | **React TSX, JSON, TypeScript, Markdown** |
-| Verification | **0** test-related files observed |
-
-> A kinetic frame for interaction, play, and visual craft. The animated frame above is a lightweight visual signature; the sections below remain the source of truth for implementation details.
-
-## Motion map
-
-`DISCOVER` → `INTERACT` → `ITERATE`
-
-Start with the experience surface, follow the main interaction loop, then iterate on feedback, accessibility, and performance. The README is designed as a quick visual entry point before the deeper project dossier.
-
-<details open>
-<summary><strong>Open the full project dossier</strong></summary>
-
-## Overview
-Age of Kings is a single-page client application built with React and three.js (via React Three Fiber). The repository contains a browser game scaffolded with Vite that composes a 3D scene, gameplay components, sound initialization, and a campaign UI. The project includes build and deploy scripts that integrate with Cloudflare Wrangler.
-
-## What it does
-- Renders a real-time 3D game scene (Canvas) with environment, sky, and shadows.
-- Provides player controls, units, projectiles, dragon cinematics, and visual effects.
-- Includes UI components for menu/campaign, a loading screen, and an ErrorBoundary for runtime errors.
-- Initializes audio on first user interaction and manages sound via a SoundManager utility (imported across components).
-- Build and deploy flows integrate Vite and Cloudflare Wrangler (see package.json scripts).
-
-## Key capabilities
-- 3D world built with @react-three/fiber and @react-three/drei (Environment, Sky, ContactShadows).
-- Player control and weapon switching.
-- Projectile management including instanced meshes for performance-sensitive rendering.
-- Dragon spawn/cinematic effects and AOE / rally indicators.
-- Loading screen and campaign UI.
-- ErrorBoundary for crash reporting in the UI.
-- Cloudflare Workers deployment integration via @cloudflare/vite-plugin and wrangler.
-
-## Technology
-- TypeScript
-- React 18
-- Vite
-- @react-three/fiber, @react-three/drei, three.js
-- Tailwind CSS
-- Zustand (state management)
-- uuid
-- lucide-react
-- Cloudflare Vite plugin + wrangler
-
-## Repository structure
-Top-level files (evidence):
-- .env.example
-- index.html
-- metadata.json
-- package-lock.json
-- package.json
-- tsconfig.json
-- tsconfig.node.json
-- vite.config.ts
-- wrangler.jsonc
-- src/ (React components and app code)
-- README.md (this file)
-
-Notable code layout (from supplied sources):
-- src/main.tsx -> App.tsx (application entry)
-- src/components/ (Game.tsx, Player.tsx, ArrowManager.tsx, Projectiles.tsx, Dragon.tsx, Effects.tsx, UI.tsx, LoadingScreen.tsx, ErrorBoundary.tsx, Scenery, etc.)
-- src/utils/SoundManager (imported by many components; source not fully present in the supplied dossier)
-- src/store/gameStore (mutableGameState/useGameStore imported by many components; source not fully present in the supplied dossier)
-
-## Getting started
-The repository includes npm scripts in package.json. The supplied README excerpt and package.json indicate these basic steps:
-
-1. Install dependencies:
-   - npm install
-
-2. Set environment key:
-   - The project references GEMINI_API_KEY in a local environment file (.env.local). An .env.example file is present at the repo root; create .env.local as needed and set GEMINI_API_KEY there.
-
-3. Development server:
-   - npm run dev
-
-Useful npm scripts (from package.json):
-- dev: vite
-- build: tsc && vite build
-- preview: npm run build && wrangler dev
-- lint: tsc --noEmit
-- deploy: npm run build && wrangler deploy
-
-Note: The repository does not include a documented Node.js version in the supplied evidence.
-
-If you cannot run the app because modules or environment are missing, see the Configuration and Development notes below.
-
-## Configuration
-- .env.example is present in the repository root (use it to see expected environment keys).
-- The app references GEMINI_API_KEY (create a local .env.local to provide this key if required).
-- Cloudflare deployment is configured via wrangler (wrangler.jsonc) and the @cloudflare/vite-plugin; deployment credentials/tokens are not present in the repository and must be provided separately by maintainers.
-
-To inspect configuration files:
-- package.json — scripts and dependencies
-- vite.config.ts — Vite configuration and plugins
-- wrangler.jsonc — Cloudflare Worker configuration
-- tsconfig.json / tsconfig.node.json — TypeScript configuration
-- .env.example — example environment keys
-
-## Development and quality notes
-- TypeScript is used with strict compiler checks; lint script runs tsc --noEmit.
-- There are no test suites or test-runner configuration evident in the supplied dossier (no jest/vitest/mocha, no test scripts).
-- No CI workflow files are present in the supplied evidence (no .github/workflows).
-- Some modules referenced by many components are not present in the supplied excerpts: notably src/store/gameStore and src/utils/SoundManager. Running a build (npm run build) or lint (npm run lint) will surface missing imports and type errors for contributors to address.
-- The build script runs TypeScript type-checking before vite build (build = tsc && vite build).
-
-Recommended initial developer checks:
-- Run npm run lint to verify type-checking.
-- Run npm run build to discover missing modules or build errors.
-- Inspect src/components and the imports of store and utils to locate or restore missing modules.
-
-## Safety and responsible use
-- The code references GEMINI_API_KEY and Cloudflare Wrangler deployment. Treat such keys and deployment tokens as sensitive secrets: do not commit them to the repository.
-- Ensure any .env.local or other secret files are listed in .gitignore (no .gitignore was visible in the supplied dossier).
-- Review wrangler and Cloudflare configuration for least-privilege deployment tokens before use.
-- This is a client-focused app; if you add any server-side components or external APIs, follow secure token storage and access policies.
-
-## Contributing
-- There is no CONTRIBUTING.md or CODE_OF_CONDUCT in the supplied evidence. To contribute, open issues and pull requests in the repository on GitHub.
-- Before submitting PRs, run the type-check and build scripts (npm run lint, npm run build) to catch basic errors.
-- When adding new secrets, provide an .env.example and ensure secrets are excluded via .gitignore.
-
-## Notes for maintainers and next steps
-The supplied audit identified these high-priority gaps to address in the repository (evidence-based):
-- Ensure src/store/gameStore.ts and src/utils/SoundManager.ts are present and complete; many components import these modules.
-- Add .env.example (already present) and ensure .env.local is ignored via .gitignore to prevent committing secrets.
-- Add a lightweight CI that runs type-check and build on PRs.
-- Add tests (unit and/or integration) for non-rendering game logic to reduce regression risk.
-
-If you need to inspect the code paths referenced above, start by opening:
-- src/components/Game.tsx, Player.tsx, ArrowManager.tsx, Projectiles.tsx, Dragon.tsx, UI.tsx, LoadingScreen.tsx, ErrorBoundary.tsx
-- package.json, vite.config.ts, wrangler.jsonc, tsconfig.json
-
-License
-- No license file was present in the supplied dossier; none is declared here.
-
-</details>
+The full design (story bible, shot-by-shot cinematic scripts, gameplay systems, architecture) is in
+**[`docs/REMASTER_PLAN.md`](docs/REMASTER_PLAN.md)**. It was written before any remaster code.
 
 ---
 
-<p align="center"><sub>README motion system · visual layer by RepoSignal · implementation details remain project-specific</sub></p>
+## The remaster at a glance
+
+| | Before | Now |
+|---|---|---|
+| **Intro** | Icons fading in on a loading screen | An **80-second real-time cinematic** in 11 scripted shots: dawn over Suryagarh, the Sun Crown, a total eclipse, Kaalrath shattering the crown in slow motion, seven comet shards, the Rakshas horde, the dragon egg, the Last King struck by lightning, and a trailer-style title slam |
+| **Website** | A title and a button | The **Gate** ember ritual → the intro → a **live 3D menu**, the same world orbiting under the eclipse → an illuminated **War Map** → typewriter **briefings** → **The Chronicle** codex → **Settings** |
+| **Story** | 6 one-line nodes | A full saga: Vikram, Kaalrath, Devdutt, Suparna, Aruna the Sun-Dragon. Every mechanic has a reason to exist in the story |
+| **World** | Flat green plane | Procedural 2.8 km terrain with plateaus, roads, scorched earth, a mountain ring, forests and wind-swept grass. A shader sky with a **real eclipse**: moon disc, animated corona, diamond-ring rim, stars |
+| **Armies** | One React component per soldier (O(n²)) | **One simulation loop**, a spatial hash, and instanced rendering: hundreds of soldiers in ~20 draw calls, at ~0.1 ms of simulation per frame |
+| **Physics** | Units slid through walls | Momentum, knockback, ragdoll-tumbling deaths, crowd separation, **ballistic arrows** that stick where they land, castle collision with gate and stair **navigation** |
+| **Audio** | A few blips | A **procedural score**: heartbeat, taiko, trailer braams, choir pads, and raga-Bhairav santoor plucks cued to the cinematic. Adaptive battle drums, spatial SFX |
+| **Ending** | "Victory!" | ***Dawn***: the shards return, the crown reforms, Aruna wakes and burns the eclipse away, sunrise over the royal host, credits |
+
+## The story in one breath
+
+Kaalrath, passed-over elder brother of King **Vikram**, made a pact with the **Rakshas** of the Ashen Deep and shattered the
+**Sun Crown**. Its shards fell across the land, traitor lords rose to claim them, and the moon locked over the sun:
+**the Endless Eclipse**. Reclaim the shards, lord by lord, and push the eclipse back until dawn returns.
+
+**How the story drives the mechanics:**
+- **Traitor lords** carry crown shards. Killing one triggers a slow-motion **kill-cam**, and the shard flies to you.
+- As shards return, the **sky brightens**: the lighting is your campaign progress, from crimson night to amber twilight to sunrise.
+- When a lord falls, his **men kneel and swear fealty** (they switch to your colours) and his **Rakshas crumble to ash**.
+- Kaalrath needs the king **alive**. Fall in battle and you're **caged, carried and jailed** atop an enemy keep while a
+  Blood-Moon timer runs. Blow the war-horn or call a dragon.
+- **Ember** (sun-fire freed from the fallen) buys soldiers and the Minister's host, and wakes **ember-kin dragons** you can ride.
+
+## Campaign
+
+`I Ashes of Suryagarh` → choose **II The Burning Plains** (invasion) · **II Wings of the East** (alliance: eagles and a dragon) ·
+**II The Siege of Suryagarh** (defense against war-horn waves) → **III The Ember Roads** → **IV The Obsidian Citadel**, where
+Kaalrath fights with shadow waves, Rakshas rifts and an eclipse phase at half health.
+
+## Controls
+
+| Input | Action |
+|---|---|
+| Mouse / WASD | Look / ride (the horse has momentum) |
+| Shift · Space | Gallop (stamina) · leap |
+| LMB · RMB | Attack (3-hit sword combo, spear throw, hold-to-draw bow) · aim |
+| 1 2 3 | Sword · Spear · Bow |
+| Q · E · R | War Cry · Sun Charge · Solar Slam |
+| Z · X · C | Army order: Attack · Guard · Hold |
+| F · G | Rally point · recruit (15 ember) |
+| B / Alt · O · P | War-horn host (60) · Ember Rite dragon (120) · mount/dismount dragon |
+| V · Wheel · H · Esc | First/third person · zoom · help · pause |
+
+The intro can be skipped by **holding Space or the mouse button**.
+
+## Run it
+
+```bash
+npm install
+npm run dev          # http://localhost:5173
+npm run build        # type-check + production build
+npm run simtest      # headless soak test: every chapter played by an autopilot, checks for crashes/NaNs
+npm run deploy       # Cloudflare Workers (wrangler)
+```
+
+**Deep links for testing:** `?screen=intro|menu|map|briefing|chronicle|settings|ending|game`, `?chapter=<id>`,
+`?t=<seconds>` (start a cinematic at a timestamp), `&freeze=1` (hold that frame), `&nointro=1`, `&near=1`, `&demo=1` (battle autopilot).
+
+**Quality presets** (Settings): *Cinematic* (MSAA, 4K shadows, dense grass), *Balanced*, *Performance* (no post-FX or shadows; the default on touch devices).
+
+## Architecture
+
+```
+src/
+  App.tsx              screen router: gate → intro → menu → map → briefing → game → results → ending
+  story/campaign.ts    chapters, narration, lords, codex
+  store/gameStore.ts   Zustand: screens, settings, persisted progress, HUD snapshot, banners
+  audio/audio.ts       procedural Web Audio engine: score kit, cues, music loops, spatial SFX
+  world/               terrain, eclipse sky + mood system, castles (+ collision/nav), vegetation,
+                       particles, instanced soldier "puppets", hero models (rider, Kaalrath, dragons), post-FX
+  cinematic/           director, shot programs (intro · menu · ending), set pieces
+  game/                world gen, AI, physics, king controller, systems, camera, renderers
+  ui/                  gate, title, menu, war map, briefing, chronicle, settings, HUD, pause, results
+legacy/                the original components, kept for reference (not built)
+```
+
+The original project was a React Three Fiber scaffold; this remaster keeps its Vite + Tailwind + Cloudflare setup.
